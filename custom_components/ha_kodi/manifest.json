@@ -1,0 +1,8 @@
+{
+  "domain": "ha_kodi",
+  "name": "ha_kodi",
+  "documentation": "https://github.com/shaonianzhentan/ha_kodi",
+  "requirements": ["xmltodict==0.12.0"],
+  "dependencies": [],
+  "codeowners": []
+}

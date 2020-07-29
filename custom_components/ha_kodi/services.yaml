@@ -1,0 +1,9 @@
+play:
+  description: 在Kodi上播放电视剧
+  fields:
+    name:
+      description: 要观看的电视剧名称
+      example: '河神2'
+    entity_id:
+      description: 要播放的实体的名称
+      example: 'media_player.kodi'
