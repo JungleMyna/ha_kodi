@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kodi视频</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.13.2/theme-chalk/index.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .el-col {
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .el-menu-vertical-demo {
+            border: solid 1px #e6e6e6;
+            overflow: auto;
+            height: calc(100% - 65px);
+        }
+
+        .title-path {
+            height: 63px;
+            font-size: 14px;
+        }
+
+        .content {
+            height: calc(100% - 63px);
+        }
+
+        .content textarea {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <el-row>
+            <el-col :span="8">
+                <el-form @submit.native.prevent ref="form" :model="form" label-width="80px">
+                    <el-form-item label="电视剧">
+                        <el-input v-model.trim="form.name" @keypress.native.enter="search" placeholder="电视剧名称">
+                        </el-input>
+                    </el-form-item>
+                </el-form>
+                <el-menu class="el-menu-vertical-demo">
+                    <el-menu-item :index="index" @click.native="selectClick(item)" v-for="(item,index) in list">
+                        <i class="el-icon-video-camera-solid"></i>
+                        <span slot="title">{{item.title}}</span>
+                    </el-menu-item>
+                </el-menu>
+            </el-col>
+            <el-col :span="16">
+                <div class="title-path">
+                    存储路径： <el-link type="danger">{{title}}</el-link>
+                    <br />
+                    在线播放地址： <el-link type="primary">{{url}}</el-link>
+                    <br />
+                    本地播放地址：
+                    <el-link type="success">{{playUrl}}</el-link>
+                </div>
+                <el-input type="textarea" spellcheck="false" class="content"></el-input>
+            </el-col>
+        </el-row>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.11/vue.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.13.2/index.js"></script>
+    <script>
+        const app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    form: {
+                        name: "河神2"
+                    },
+                    title: "",
+                    url: "",
+                    playUrl: "",
+                    list: []
+                }
+            },
+            created() {
+
+            },
+            methods: {
+                async http(params) {
+                    let res = await fetch('/ha_kodi-api', {
+                        method: 'post',
+                        headers: { 'content-type': 'application/json; charset=utf-8' },
+                        body: JSON.stringify(params)
+                    }).then(res => res.json())
+                    return res
+                },
+                loading() {
+                    return this.$loading({
+                        lock: true,
+                        text: 'Loading',
+                        spinner: 'el-icon-loading',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    })
+                },
+                search() {
+                    let { name } = this.form
+                    const loading = this.loading();
+                    this.http({ type: 'search', name }).then(({ code, data }) => {
+                        if (code == 0) {
+                            this.list = data.list
+                            this.url = data.video_url
+                        }
+                    }).finally(() => {
+                        loading.close()
+                    })
+                    this.form.name = ''
+                },
+                selectClick({ title, url }) {
+                    const loading = this.loading();
+                    this.http({ type: 'download_list', url }).then(({ code, data, base_url }) => {
+                        if (code == 0) {
+                            this.title = '/' + title.replace('-', '/')
+                            this.playUrl = base_url + title.replace('-', '/') + '/index.m3u8'
+                            let content = data.join('\n')
+                            document.querySelector('.content textarea').value = content
+                            // console.log(content)
+                        }
+                    }).finally(() => {
+                        loading.close()
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

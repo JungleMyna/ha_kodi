@@ -6,9 +6,13 @@ from homeassistant.components.http import HomeAssistantView
 import logging
 _LOGGER = logging.getLogger(__name__)
 
+from .api_video import Video
+
 DOMAIN = 'ha_kodi'
 VERSION = '1.0'
+DOMAIN_API = '/' + DOMAIN + '-api'
 ROOT_PATH = '/' + DOMAIN +'-local/' + VERSION
+VIDEO_ROOT_PATH = '/' + DOMAIN + '-video'
 
 async def async_setup(hass, config):
     # 显示插件信息
@@ -17,6 +21,8 @@ async def async_setup(hass, config):
     Kodi视频辅助插件【作者QQ：635147515】
     
     版本：''' + VERSION + '''
+
+    API接口：''' + DOMAIN_API + '''
         
     项目地址：https://github.com/shaonianzhentan/ha_kodi
 -------------------------------------------------------------------''')
@@ -24,53 +30,46 @@ async def async_setup(hass, config):
     local = hass.config.path('custom_components/'+DOMAIN+'/local')
     if os.path.isdir(local):
         hass.http.register_static_path(ROOT_PATH, local, False)
-    # 读取配置
-    async def play_video(call):
-        data = call.data
-        _name = data['name']
-        entity_id = data['entity_id']        
-        await search(hass, entity_id, _name)
-        print(_name)
+
+    # 注册视频目录
+    cfg = config[DOMAIN]
+    video_path = cfg.get('video_path', '')
+    if os.path.isdir(video_path):
+        hass.http.register_static_path(VIDEO_ROOT_PATH, video_path, False)
+    
+    video = Video(hass, local + '/data/', get_url(hass) + ROOT_PATH + '/')
+    hass.data[DOMAIN] = video
     # 注册服务
-    hass.services.async_register(DOMAIN, 'play', play_video)
+    hass.services.async_register(DOMAIN, 'play', video.play_video)
+    hass.http.register_view(HassGateView)
+    # 注册菜单栏
+    hass.components.frontend.async_register_built_in_panel(
+        "iframe",
+        "Kodi视频",
+        "mdi:kodi",
+        DOMAIN,
+        {"url": ROOT_PATH + "/index.html"},
+        require_admin=True
+    )
     return True
 
-async def search(hass, entity_id, keywords): 
-    async with aiohttp.ClientSession() as session:
-        async with session.get('https://api.shijiapi.com/api.php/provide/vod/at/xml/?wd=' + keywords) as res:
-            xml_result = await res.text()
-            json_result = xmltodict.parse(xml_result, encoding='utf-8')
-            #print(json_result)
-            video = json_result['rss']['list']['video']
-            if video:
-                if isinstance(video, list):
-                    video = video[0]
-                id = str(video['id'])
-                async with session.get('https://api.shijiapi.com/api.php/provide/vod/at/xml/?ac=videolist&ids=' + id) as res:
-                    xml_result = await res.text()
-                    json_result = xmltodict.parse(xml_result, encoding='utf-8')
-                    #print(json_result)
-                    dd = json_result['rss']['list']['video']['dl']['dd']
-                    obj = dd[1]
-                    arr = obj['#text'].split('#')
+class HassGateView(HomeAssistantView):
 
-                    # 生成文件
-                    file_content = '#EXTM3U'
-                    for item in arr:
-                        _arr = item.split('$')
-                        if len(_arr) == 2:
-                            print(_arr[0])
-                            print(_arr[1])
-                            file_content += '\n#EXTINF:-1, ' + video['name'] + '-' + _arr[0] + '\n' + _arr[1]
-                    # 写入文件
-                    file_path = hass.config.path("custom_components/" + DOMAIN + "/local/") + id + '.m3u'
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write(file_content)
-                    print("下载成功，开始播放")
-                    video_url = get_url(hass) + ROOT_PATH + '/' + id + '.m3u'
-                    print(video_url)
-                    await hass.services.async_call('media_player', 'play_media', {
-                        'entity_id': entity_id,
-                        'media_content_type': 'playlist',
-                        'media_content_id': video_url
-                    })
+    url = DOMAIN_API
+    name = DOMAIN
+    requires_auth = False
+    
+    async def post(self, request):
+        hass = request.app["hass"]
+        video = hass.data[DOMAIN]
+        res = await request.json()
+        type = res.get('type', '')
+        if type == 'download_list':
+            url = res['url']
+            data = await video.get_download_list(url)
+            return self.json({'code':0, 'data': data, 'base_url': get_url(hass) + VIDEO_ROOT_PATH + '/'})
+        elif type == 'search':
+            data = await video.get_series(res['name'])
+            return self.json({'code':0, 'data': data})
+
+        return self.json({'code':1, 'msg': '参数不正确'})
