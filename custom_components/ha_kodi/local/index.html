@@ -122,7 +122,7 @@
                     const loading = this.loading();
                     this.http({ type: 'download_list', url }).then(({ code, data, base_url }) => {
                         if (code == 0) {
-                            this.title = '/' + title.replace('-', '/')
+                            this.title = '/kodi/' + title.replace('-', '/')
                             this.playUrl = base_url + title.replace('-', '/') + '/index.m3u8'
                             let content = data.join('\n')
                             document.querySelector('.content textarea').value = content

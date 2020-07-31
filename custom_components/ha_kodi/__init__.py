@@ -12,7 +12,6 @@ DOMAIN = 'ha_kodi'
 VERSION = '1.0'
 DOMAIN_API = '/' + DOMAIN + '-api'
 ROOT_PATH = '/' + DOMAIN +'-local/' + VERSION
-VIDEO_ROOT_PATH = '/' + DOMAIN + '-video'
 
 async def async_setup(hass, config):
     # 显示插件信息
@@ -30,12 +29,6 @@ async def async_setup(hass, config):
     local = hass.config.path('custom_components/'+DOMAIN+'/local')
     if os.path.isdir(local):
         hass.http.register_static_path(ROOT_PATH, local, False)
-
-    # 注册视频目录
-    cfg = config[DOMAIN]
-    video_path = cfg.get('video_path', '')
-    if os.path.isdir(video_path):
-        hass.http.register_static_path(VIDEO_ROOT_PATH, video_path, False)
     
     video = Video(hass, local + '/data/', get_url(hass) + ROOT_PATH + '/')
     hass.data[DOMAIN] = video
@@ -67,7 +60,7 @@ class HassGateView(HomeAssistantView):
         if type == 'download_list':
             url = res['url']
             data = await video.get_download_list(url)
-            return self.json({'code':0, 'data': data, 'base_url': get_url(hass) + VIDEO_ROOT_PATH + '/'})
+            return self.json({'code':0, 'data': data, 'base_url': get_url(hass).replace(':8123', '') + '/kodi/'})
         elif type == 'search':
             data = await video.get_series(res['name'])
             return self.json({'code':0, 'data': data})
