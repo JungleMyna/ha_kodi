@@ -65,7 +65,7 @@
                     本地播放地址：
                     <el-link type="success">{{playUrl}}</el-link>
                 </div>
-                <el-input type="textarea" spellcheck="false" class="content"></el-input>
+                <el-input type="textarea" spellcheck="false" class="content" v-model="form.content"></el-input>
             </el-col>
         </el-row>
     </div>
@@ -77,7 +77,8 @@
             data() {
                 return {
                     form: {
-                        name: "河神2"
+                        name: "河神2",
+                        content: ''
                     },
                     title: "",
                     url: "",
@@ -125,8 +126,7 @@
                             this.title = '/kodi/' + title.replace('-', '/')
                             this.playUrl = base_url + title.replace('-', '/') + '/index.m3u8'
                             let content = data.join('\n')
-                            document.querySelector('.content textarea').value = content
-                            // console.log(content)
+                            this.form.content = content
                         }
                     }).finally(() => {
                         loading.close()
