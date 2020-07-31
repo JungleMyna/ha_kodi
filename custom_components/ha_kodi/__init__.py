@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 from .api_video import Video
 
 DOMAIN = 'ha_kodi'
-VERSION = '1.0'
+VERSION = '1.1'
 DOMAIN_API = '/' + DOMAIN + '-api'
 ROOT_PATH = '/' + DOMAIN +'-local/' + VERSION
 
