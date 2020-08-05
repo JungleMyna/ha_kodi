@@ -116,11 +116,11 @@ class SateCardKodi extends HTMLElement {
         /* ***************** 附加代码 ***************** */
         let { $ } = this
         $('.prev').onclick = () => {
-            this.toast("上一曲")
+            this.toast("上一集")
             this.callService("media_player.media_previous_track", { entity_id: this._stateObj.entity_id })
         }
         $('.next').onclick = () => {
-            this.toast("下一曲")
+            this.toast("下一集")
             this.callService("media_player.media_next_track", { entity_id: this._stateObj.entity_id })
         }
         $('.action').onclick = () => {
@@ -241,6 +241,23 @@ class MoreInfoKodi extends HTMLElement {
         })
     }
 
+    clipboard(text) {
+        let id = 'unique-id-clipboard-copyText'
+        let copyText = document.getElementById(id)
+        if (!copyText) {
+            copyText = document.createElement('input')
+            copyText.id = id
+            copyText.style = 'position:absolute;left:-9999px'
+            document.body.appendChild(copyText)
+        }
+        copyText.value = text
+        copyText.select()
+        copyText.setSelectionRange(0, copyText.value.length)
+        document.execCommand('copy')
+
+        this.toast('复制成功');
+    }
+
     // 创建界面
     created(hass) {
         /* ***************** 基础代码 ***************** */
@@ -295,6 +312,9 @@ class MoreInfoKodi extends HTMLElement {
                 let li = document.createElement('li')
                 let span = document.createElement('span')
                 span.textContent = ele.label
+                span.onclick = () => {
+                    this.clipboard(ele.file)                    
+                }
                 if (this._stateObj.attributes.media_title == ele.label) {
                     span.classList.add('active')
                     li.appendChild(span)

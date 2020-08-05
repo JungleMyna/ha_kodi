@@ -10,8 +10,12 @@ class Video():
         self.data_dir = data_dir
         self.api_url = api_url
 
+    # 调用服务
+    def call_service(self, domain, service, data):
+        self.hass.async_create_task(self.hass.services.async_call(domain, service, data))
+
     def notify(self, msg):
-        self.hass.services.call('persistent_notification', 'create', {
+        self.call_service('persistent_notification', 'create', {
             'message': msg,
             'title': 'Kodi视频通知',
             'notification_id': 'api_video'
@@ -25,17 +29,19 @@ class Video():
         _dict = await self.get_series(_name)
         if isinstance(_dict, dict):
             # 生成文件
-            await self.hass.services.async_call('media_player', 'play_media', {
+            self.call_service('media_player', 'play_media', {
                 'entity_id': entity_id,
                 'media_content_type': 'playlist',
                 'media_content_id': _dict['video_url']
-            })、
-            self.notify("开始播放视频，请检查是否已经播放")
+            })
+            self.notify("开始播放视频【" + _dict['name'] + "】，请检查是否已经播放")
     
     # 获取视频剧集
     async def get_series(self, keywords):
         async with aiohttp.ClientSession() as session:
-            async with session.get('https://api.shijiapi.com/api.php/provide/vod/at/xml/?wd=' + keywords) as res:
+            url = 'https://api.shijiapi.com/api.php/provide/vod/at/xml/?wd=' + keywords
+            print(url)
+            async with session.get(url) as res:
                 xml_result = await res.text()
                 json_result = xmltodict.parse(xml_result, encoding='utf-8')
                 #print(json_result)
@@ -44,12 +50,17 @@ class Video():
                     if isinstance(video, list):
                         video = video[0]
                     id = str(video['id'])
-                    async with session.get('https://api.shijiapi.com/api.php/provide/vod/at/xml/?ac=videolist&ids=' + id) as res:
+                    url = 'https://api.shijiapi.com/api.php/provide/vod/at/xml/?ac=videolist&ids=' + id
+                    print(url)
+                    async with session.get(url) as res:
                         xml_result = await res.text()
                         json_result = xmltodict.parse(xml_result, encoding='utf-8')
                         #print(json_result)
                         dd = json_result['rss']['list']['video']['dl']['dd']
-                        obj = dd[1]
+                        # print(dd)
+                        _dd = list(filter(lambda x: x['@flag'].count('m3u8') > 0, dd))
+                        # print(_dd)
+                        obj = _dd[0]
                         arr = obj['#text'].split('#')
                         # 生成文件                        
                         file_content = '#EXTM3U'
