@@ -9,7 +9,14 @@ class Video():
         self.hass = hass
         self.data_dir = data_dir
         self.api_url = api_url
-    
+
+    def notify(self, msg):
+        self.hass.services.call('persistent_notification', 'create', {
+            'message': msg,
+            'title': 'Kodi视频通知',
+            'notification_id': 'api_video'
+        })
+
     # 播放视频
     async def play_video(self, call):
         data = call.data
@@ -22,7 +29,8 @@ class Video():
                 'entity_id': entity_id,
                 'media_content_type': 'playlist',
                 'media_content_id': _dict['video_url']
-            })
+            })、
+            self.notify("开始播放视频，请检查是否已经播放")
     
     # 获取视频剧集
     async def get_series(self, keywords):

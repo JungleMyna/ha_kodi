@@ -58,12 +58,12 @@
             </el-col>
             <el-col :span="16">
                 <div class="title-path">
-                    存储路径： <el-link type="danger">{{title}}</el-link>
+                    存储路径： <el-link type="danger" @click="clipboard(title)">{{title}}</el-link>
                     <br />
-                    在线播放地址： <el-link type="primary">{{url}}</el-link>
+                    在线播放地址： <el-link type="primary" @click="clipboard(url)">{{url}}</el-link>
                     <br />
                     本地播放地址：
-                    <el-link type="success">{{playUrl}}</el-link>
+                    <el-link type="success" @click="clipboard(playUrl)">{{playUrl}}</el-link>
                 </div>
                 <el-input type="textarea" spellcheck="false" class="content" v-model="form.content"></el-input>
             </el-col>
@@ -90,13 +90,28 @@
 
             },
             methods: {
+                clipboard(text) {
+                    let id = 'unique-id-clipboard-copyText'
+                    let copyText = document.getElementById(id)
+                    if (!copyText) {
+                        copyText = document.createElement('input')
+                        copyText.id = id
+                        copyText.style = 'position:absolute;left:-9999px'
+                        document.body.appendChild(copyText)
+                    }
+                    copyText.value = text
+                    copyText.select()
+                    copyText.setSelectionRange(0, copyText.value.length)
+                    document.execCommand('copy')
+
+                    this.$message.success('复制成功');
+                },
                 async http(params) {
-                    let res = await fetch('/ha_kodi-api', {
-                        method: 'post',
+                    return top.document.querySelector('home-assistant').hass.fetchWithAuth('/ha_kodi-api', {
+                        method: 'POST',
                         headers: { 'content-type': 'application/json; charset=utf-8' },
                         body: JSON.stringify(params)
                     }).then(res => res.json())
-                    return res
                 },
                 loading() {
                     return this.$loading({
