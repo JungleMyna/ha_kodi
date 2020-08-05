@@ -6,7 +6,4 @@
 
 ```yaml
 ha_kodi:
-  # 视频下载目录
-  video_path: '/mnt/data/minidlna/kodi'
-
 ```
