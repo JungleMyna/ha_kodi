@@ -145,9 +145,9 @@ class SateCardKodi extends HTMLElement {
         // console.log(_stateObj)
         let action = $('.action')
         let attrs = _stateObj.attributes
-        if ('entity_picture' in attrs) {
-            action.src = attrs.entity_picture
-        }
+        // if ('entity_picture' in attrs) {
+        //     action.src = attrs.entity_picture
+        // }
         // 如果是在播放中，则转圈圈
         if (_stateObj.state == "playing") {
             if (!action.classList.contains('rotate')) action.classList.add('rotate')
